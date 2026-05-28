@@ -101,6 +101,7 @@
     position:relative;margin:0 14px;border-radius:12px;
     aspect-ratio:1/1;overflow:hidden;background:var(--stage-bg);
     border:1px dashed var(--line);cursor:crosshair;
+    touch-action:pan-y;
   }
   .stage canvas{display:block;width:100%;height:100%;object-fit:contain;}
   .stage .empty{
@@ -326,10 +327,20 @@ function setupStage(key){
   }
 
   stage.addEventListener('click', e=>read(e.clientX,e.clientY));
+
+  // Касание: отличаем тап (пипетка) от свайпа (скролл страницы)
+  let tStart=null;
   stage.addEventListener('touchstart', e=>{
-    e.preventDefault();
-    const t=e.touches[0]; read(t.clientX,t.clientY);
-  },{passive:false});
+    const t=e.touches[0];
+    tStart={x:t.clientX, y:t.clientY};
+  }, {passive:true});
+  stage.addEventListener('touchend', e=>{
+    if(!tStart) return;
+    const t=e.changedTouches[0];
+    const moved=Math.hypot(t.clientX-tStart.x, t.clientY-tStart.y);
+    tStart=null;
+    if(moved<12) read(t.clientX, t.clientY); // короткий тап — берём цвет
+  }, {passive:true});
 }
 
 function updateSwatch(key){
